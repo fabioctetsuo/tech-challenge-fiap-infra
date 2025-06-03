@@ -17,6 +17,7 @@ resource "aws_subnet" "tech_challenge_public_subnet_1" {
   map_public_ip_on_launch = true
   tags = {
     Name = "tech_challenge_public_subnet_1"
+    "kubernetes.io/role/elb" = "1"
   }
 }
 
@@ -27,6 +28,7 @@ resource "aws_subnet" "tech_challenge_public_subnet_2" {
   map_public_ip_on_launch = true
   tags = {
     Name = "tech_challenge_public_subnet_2"
+    "kubernetes.io/role/elb" = "1"
   }
 }
 
@@ -38,6 +40,7 @@ resource "aws_subnet" "tech_challenge_private_subnet_1" {
   map_public_ip_on_launch = true
   tags = {
     Name = "tech_challenge_private_subnet_1"
+    "kubernetes.io/role/internal-elb" = "1"
   }
 }
 
@@ -48,6 +51,7 @@ resource "aws_subnet" "tech_challenge_private_subnet_2" {
   map_public_ip_on_launch = true
   tags = {
     Name = "tech_challenge_private_subnet_2"
+    "kubernetes.io/role/internal-elb" = "1"
   }
 }
 
