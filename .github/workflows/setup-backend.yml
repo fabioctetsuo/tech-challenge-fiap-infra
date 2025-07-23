@@ -1,0 +1,84 @@
+name: Setup Terraform Backend
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend-setup.tf'
+      - 'scripts/setup-backend.sh'
+
+env:
+  TF_VERSION: "1.5.0"
+
+jobs:
+  setup-backend:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1  # Backend resources are in us-east-1
+
+      - name: Initialize Terraform for Backend Setup
+        run: terraform init
+
+      - name: Create Backend Resources
+        run: |
+          echo "🔧 Setting up Terraform backend resources..."
+          
+          # Create S3 bucket
+          echo "📦 Creating S3 bucket for Terraform state..."
+          terraform apply -target=aws_s3_bucket.terraform_state -auto-approve
+          
+          # Create DynamoDB table
+          echo "🔒 Creating DynamoDB table for state locking..."
+          terraform apply -target=aws_dynamodb_table.terraform_locks -auto-approve
+          
+          echo "✅ Backend resources created successfully!"
+
+      - name: Verify Backend Setup
+        run: |
+          echo "🔍 Verifying backend resources..."
+          
+          # Check S3 bucket
+          if aws s3 ls s3://tech-challenge-terraform-state >/dev/null 2>&1; then
+            echo "✅ S3 bucket 'tech-challenge-terraform-state' exists"
+          else
+            echo "❌ S3 bucket not found"
+            exit 1
+          fi
+          
+          # Check DynamoDB table
+          if aws dynamodb describe-table --table-name tech-challenge-terraform-locks --region us-east-1 >/dev/null 2>&1; then
+            echo "✅ DynamoDB table 'tech-challenge-terraform-locks' exists"
+          else
+            echo "❌ DynamoDB table not found"
+            exit 1
+          fi
+          
+          echo "🎉 Backend setup verification complete!"
+
+      - name: Show Backend Info
+        run: |
+          echo "📋 Backend Resources Created:"
+          echo "  - S3 Bucket: $(terraform output -raw s3_bucket_name)"
+          echo "  - DynamoDB Table: $(terraform output -raw dynamodb_table_name)"
+          echo ""
+          echo "🔧 Next Steps:"
+          echo "  - The main Terraform configuration will now use the S3 backend"
+          echo "  - CI/CD workflows will work properly with state persistence"
+          echo "  - Destroy operations will work correctly" 

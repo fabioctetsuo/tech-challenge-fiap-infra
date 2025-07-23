@@ -1,7 +1,7 @@
 # VPC
 resource "aws_vpc" "tech_challenge_vpc" {
-  cidr_block = "10.0.0.0/16"
-  enable_dns_support = true
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_support   = true
   enable_dns_hostnames = true
 
   tags = {
@@ -11,46 +11,46 @@ resource "aws_vpc" "tech_challenge_vpc" {
 
 # Subnets públicas
 resource "aws_subnet" "tech_challenge_public_subnet_1" {
-  vpc_id            = aws_vpc.tech_challenge_vpc.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "${var.aws_region}a"
+  vpc_id                  = aws_vpc.tech_challenge_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "${var.aws_region}a"
   map_public_ip_on_launch = true
   tags = {
-    Name = "tech_challenge_public_subnet_1"
+    Name                     = "tech_challenge_public_subnet_1"
     "kubernetes.io/role/elb" = "1"
   }
 }
 
 resource "aws_subnet" "tech_challenge_public_subnet_2" {
-  vpc_id            = aws_vpc.tech_challenge_vpc.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "${var.aws_region}b"
+  vpc_id                  = aws_vpc.tech_challenge_vpc.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "${var.aws_region}b"
   map_public_ip_on_launch = true
   tags = {
-    Name = "tech_challenge_public_subnet_2"
+    Name                     = "tech_challenge_public_subnet_2"
     "kubernetes.io/role/elb" = "1"
   }
 }
 
 # Subnets Privadas
 resource "aws_subnet" "tech_challenge_private_subnet_1" {
-  vpc_id            = aws_vpc.tech_challenge_vpc.id
-  cidr_block        = "10.0.3.0/24"
-  availability_zone = "${var.aws_region}a"
+  vpc_id                  = aws_vpc.tech_challenge_vpc.id
+  cidr_block              = "10.0.3.0/24"
+  availability_zone       = "${var.aws_region}a"
   map_public_ip_on_launch = true
   tags = {
-    Name = "tech_challenge_private_subnet_1"
+    Name                              = "tech_challenge_private_subnet_1"
     "kubernetes.io/role/internal-elb" = "1"
   }
 }
 
 resource "aws_subnet" "tech_challenge_private_subnet_2" {
-  vpc_id            = aws_vpc.tech_challenge_vpc.id
-  cidr_block        = "10.0.4.0/24"
-  availability_zone = "${var.aws_region}b"
+  vpc_id                  = aws_vpc.tech_challenge_vpc.id
+  cidr_block              = "10.0.4.0/24"
+  availability_zone       = "${var.aws_region}b"
   map_public_ip_on_launch = true
   tags = {
-    Name = "tech_challenge_private_subnet_2"
+    Name                              = "tech_challenge_private_subnet_2"
     "kubernetes.io/role/internal-elb" = "1"
   }
 }
@@ -104,7 +104,7 @@ resource "aws_route" "private_route" {
   route_table_id         = aws_route_table.tech_challenge_app_private_rt.id
   destination_cidr_block = "0.0.0.0/0"
   #gateway_id             = aws_internet_gateway.lanchonete_app_igw.id
-  nat_gateway_id         = aws_nat_gateway.tech_challenge_nat_gateway.id
+  nat_gateway_id = aws_nat_gateway.tech_challenge_nat_gateway.id
 }
 
 # Associação da tabela de roteamento privada à subnet privada 1
@@ -137,7 +137,7 @@ resource "aws_eip" "tech_challenge_nat_gateway_eip" {
 #Crie o NAT Gateway em uma subnet pública:
 resource "aws_nat_gateway" "tech_challenge_nat_gateway" {
   allocation_id = aws_eip.tech_challenge_nat_gateway_eip.id
-  subnet_id     = aws_subnet.tech_challenge_public_subnet_1.id 
+  subnet_id     = aws_subnet.tech_challenge_public_subnet_1.id
 
   tags = {
     Name = "tech_challenge_nat_gateway"

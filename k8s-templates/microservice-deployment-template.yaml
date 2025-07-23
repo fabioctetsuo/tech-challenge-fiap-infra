@@ -1,0 +1,106 @@
+# Template for NestJS Microservice Deployment with AWS ALB
+# Replace SERVICE_NAME, SERVICE_PORT, and other placeholders with actual values
+# This template assumes the infrastructure has already created the namespace and ConfigMap
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: SERVICE_NAME-service
+  namespace: SERVICE_NAME
+  labels:
+    app: SERVICE_NAME-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: SERVICE_NAME-service
+  template:
+    metadata:
+      labels:
+        app: SERVICE_NAME-service
+        version: v1
+    spec:
+      containers:
+      - name: SERVICE_NAME-service
+        image: YOUR_REGISTRY/SERVICE_NAME-service:latest
+        ports:
+        - containerPort: SERVICE_PORT
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: SERVICE_NAME-config
+              key: NODE_ENV
+        - name: SERVICE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: SERVICE_NAME-config
+              key: SERVICE_PORT
+        # Add your service-specific environment variables here
+        # - name: DATABASE_URL
+        #   value: "your-database-url"
+        # - name: REDIS_URL
+        #   value: "your-redis-url"
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: SERVICE_PORT
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: SERVICE_PORT
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: SERVICE_NAME-service
+  namespace: SERVICE_NAME
+  labels:
+    app: SERVICE_NAME-service
+spec:
+  type: ClusterIP  # Changed from LoadBalancer - ALB Ingress handles external access
+  ports:
+  - port: SERVICE_PORT
+    targetPort: SERVICE_PORT
+    protocol: TCP
+    name: http
+  selector:
+    app: SERVICE_NAME-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: SERVICE_NAME-hpa
+  namespace: SERVICE_NAME
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: SERVICE_NAME-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80 

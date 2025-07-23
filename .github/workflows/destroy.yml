@@ -1,40 +1,131 @@
-name: "Destroy resources"
+name: "Destroy Infrastructure"
 
 on:
   workflow_dispatch:
+    inputs:
+      confirm_destroy:
+        description: 'Type "DESTROY" to confirm infrastructure destruction'
+        required: true
+        type: string
+
+env:
+  TF_VERSION: "1.5.0"
 
 jobs:
-  terraform:
-    name: "Terraform"
+  destroy:
+    name: "Terraform Destroy"
     runs-on: ubuntu-latest
     environment: production
 
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
-    defaults:
-      run:
-        shell: bash
-
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Terraform Init
-        run: terraform init
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Confirm Destroy
+        run: |
+          if [ "${{ github.event.inputs.confirm_destroy }}" != "DESTROY" ]; then
+            echo "❌ Destroy not confirmed. Expected 'DESTROY', got '${{ github.event.inputs.confirm_destroy }}'"
+            exit 1
+          fi
+          echo "✅ Destroy confirmed. Proceeding with infrastructure destruction..."
+
+      - name: Terraform Init with Backend
+        run: |
+          echo "🔧 Initializing Terraform with S3 backend..."
+          terraform init \
+            -backend-config="bucket=tech-challenge-fiap-terraform-state-2025" \
+            -backend-config="key=infrastructure/terraform.tfstate" \
+            -backend-config="region=us-east-1" \
+            -backend-config="encrypt=true" \
+            -backend-config="dynamodb_table=tech-challenge-fiap-terraform-locks"
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
 
-      # Generates an execution destroy for Terraform
+      - name: Check Current State
+        run: |
+          echo "📋 Current resources in Terraform state:"
+          terraform state list || echo "No resources in state"
+          
+          echo "🔍 Checking for existing AWS resources..."
+          if aws eks describe-cluster --name tech_challenge_cluster --region ${{ vars.AWS_REGION }} >/dev/null 2>&1; then
+            echo "✅ EKS cluster 'tech_challenge_cluster' exists in AWS"
+          else
+            echo "❌ EKS cluster 'tech_challenge_cluster' does not exist in AWS"
+          fi
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan Destroy
+        run: |
+          echo "📋 Planning infrastructure destruction..."
+          terraform plan -destroy \
+            -var="aws_region=${{ vars.AWS_REGION }}" \
+            -out=destroy-plan
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+
+      - name: Show Destroy Plan
+        run: |
+          echo "📋 Resources that will be destroyed:"
+          terraform show destroy-plan | grep -E "(Plan:|#|aws_|kubernetes_|helm_)" || echo "No resources to destroy"
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+
       - name: Terraform Destroy
         run: |
-          terraform destroy -auto-approve \
-            -var="aws_region=${{ vars.AWS_REGION }}"
+          echo "💥 Executing infrastructure destruction..."
+          terraform apply destroy-plan
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
           AWS_REGION: ${{ vars.AWS_REGION }}
+
+      - name: Verify Destruction
+        run: |
+          echo "🔍 Verifying resources have been destroyed..."
+          
+          # Check if EKS cluster still exists
+          if aws eks describe-cluster --name tech_challenge_cluster --region ${{ vars.AWS_REGION }} >/dev/null 2>&1; then
+            echo "❌ EKS cluster 'tech_challenge_cluster' still exists!"
+            exit 1
+          else
+            echo "✅ EKS cluster 'tech_challenge_cluster' has been destroyed"
+          fi
+          
+          # Check if VPC still exists
+          VPC_ID=$(aws ec2 describe-vpcs --filters "Name=tag:Name,Values=tech_challenge_vpc" --query 'Vpcs[0].VpcId' --output text --region ${{ vars.AWS_REGION }})
+          if [ "$VPC_ID" != "None" ] && [ "$VPC_ID" != "" ]; then
+            echo "❌ VPC 'tech_challenge_vpc' still exists with ID: $VPC_ID"
+            exit 1
+          else
+            echo "✅ VPC 'tech_challenge_vpc' has been destroyed"
+          fi
+          
+          echo "🎉 All resources have been successfully destroyed!"
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+
+      - name: Cleanup
+        run: |
+          echo "🧹 Infrastructure destroyed successfully"
+          echo "📋 Resources removed:"
+          echo "  - EKS Cluster: tech_challenge_cluster"
+          echo "  - VPC and networking resources"
+          echo "  - ALB and security groups"
+          echo "  - Kubernetes namespaces and resources"
+          echo "  - Terraform state cleaned up"
+        if: success()

@@ -8,17 +8,27 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = "~> 2.32.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13.0"
+    }
   }
 
   required_version = ">= 1.2.0"
+
+  # Backend configuration for state management
+  backend "s3" {
+    bucket         = "tech-challenge-fiap-terraform-state-2025"
+    key            = "infrastructure/terraform.tfstate"
+    region         = "us-east-1" # Default region for state bucket
+    encrypt        = true
+    dynamodb_table = "tech-challenge-fiap-terraform-locks"
+  }
 }
 
 provider "aws" {
   region = var.aws_region
 }
 
-provider "kubernetes" {
-  host                   = aws_eks_cluster.tech_challenge_cluster.endpoint
-  cluster_ca_certificate = base64decode(aws_eks_cluster.tech_challenge_cluster.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.tech_challenge_cluster_auth.token
-}
+# Kubernetes provider configuration moved to kubernetes.tf
+# to avoid circular dependencies

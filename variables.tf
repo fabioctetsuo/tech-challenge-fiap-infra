@@ -10,3 +10,55 @@ variable "cluster_name" {
   type        = string
   default     = "tech_challenge_cluster"
 }
+
+# Microservices configuration
+variable "microservices" {
+  description = "Configuration for microservices"
+  type = map(object({
+    name           = string
+    port           = number
+    replicas       = number
+    cpu_limit      = string
+    memory_limit   = string
+    cpu_request    = string
+    memory_request = string
+  }))
+  default = {
+    products = {
+      name           = "products-service"
+      port           = 3001
+      replicas       = 2
+      cpu_limit      = "500m"
+      memory_limit   = "512Mi"
+      cpu_request    = "250m"
+      memory_request = "256Mi"
+    }
+    orders = {
+      name           = "orders-service"
+      port           = 3002
+      replicas       = 2
+      cpu_limit      = "500m"
+      memory_limit   = "512Mi"
+      cpu_request    = "250m"
+      memory_request = "256Mi"
+    }
+    payment = {
+      name           = "payment-service"
+      port           = 3003
+      replicas       = 2
+      cpu_limit      = "500m"
+      memory_limit   = "512Mi"
+      cpu_request    = "250m"
+      memory_request = "256Mi"
+    }
+  }
+}
+
+# Environment
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "development"
+}
+
+# Note: domain_name variable removed as ingress is not used for student accounts
