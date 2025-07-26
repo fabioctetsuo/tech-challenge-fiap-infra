@@ -209,26 +209,26 @@ Each microservice should be deployed to its own repository. Use the template in 
 # Update image to your registry/products-service:latest
 ```
 
-## Load Balancing & Ingress
+## Load Balancing
 
-The infrastructure uses **AWS Application Load Balancer (ALB)** for ingress traffic:
+The infrastructure uses **AWS Application Load Balancer (ALB)** for external access:
 
-- **Single ALB** handles traffic for all 3 microservices
-- **Host-based routing**: `service-name.tech-challenge.local`
+- **Individual ALBs** for each microservice (LoadBalancer services)
+- **Direct port access** via LoadBalancer endpoints
 - **Health checks** at `/health` endpoint
-- **Cost-effective** - only one load balancer for all services
+- **Cost-effective** - AWS manages the load balancers
 
 ### ALB Features:
-- ✅ **Host-based routing** - Each service gets its own subdomain
+- ✅ **Direct access** - Each service gets its own ALB
 - ✅ **Health checks** - Automatic health monitoring
 - ✅ **SSL/TLS support** - Can be configured for HTTPS
 - ✅ **AWS-native** - Better integration with AWS services
-- ✅ **Cost-effective** - Single load balancer for all services
+- ✅ **Simple setup** - No ingress controller required
 
 ### Service Endpoints:
-- `products-service.tech-challenge.local` → Products Service (port 3001)
-- `orders-service.tech-challenge.local` → Orders Service (port 3002)
-- `payment-service.tech-challenge.local` → Payment Service (port 3003)
+- Products Service: `http://[ALB-URL]:3001`
+- Orders Service: `http://[ALB-URL]:3002`
+- Payment Service: `http://[ALB-URL]:3003`
 
 ## Troubleshooting
 

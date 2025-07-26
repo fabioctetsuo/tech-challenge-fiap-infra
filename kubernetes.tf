@@ -87,7 +87,7 @@ resource "kubernetes_service" "microservices_loadbalancer" {
     type = "LoadBalancer"
     selector = {
       # Use the correct app selector that matches the application deployment
-      app = each.key == "products" ? "tech-product-api" : each.value.name
+      app = each.key == "products" ? "tech-product-api" : each.key == "orders" ? "tech-order-api" : each.key == "payment" ? "tech-payment-api" : each.key == "payment-mock" ? "pagamento-mock" : each.value.name
     }
     port {
       port        = each.value.port

@@ -51,6 +51,15 @@ variable "microservices" {
       cpu_request    = "250m"
       memory_request = "256Mi"
     }
+    payment-mock = {
+      name           = "payment-mock-service"
+      port           = 3004
+      replicas       = 1
+      cpu_limit      = "300m"
+      memory_limit   = "256Mi"
+      cpu_request    = "100m"
+      memory_request = "128Mi"
+    }
   }
 }
 

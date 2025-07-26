@@ -70,7 +70,7 @@ metadata:
   labels:
     app: SERVICE_NAME-service
 spec:
-  type: ClusterIP  # Changed from LoadBalancer - ALB Ingress handles external access
+  type: ClusterIP  # Internal service - LoadBalancer service handles external access
   ports:
   - port: SERVICE_PORT
     targetPort: SERVICE_PORT

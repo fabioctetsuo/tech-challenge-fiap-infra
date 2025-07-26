@@ -35,7 +35,7 @@ output "microservices_loadbalancer_endpoints" {
       service_name = "${config.name}-loadbalancer"
       namespace    = config.name
       port         = config.port
-      app_selector = name == "products" ? "tech-product-api" : config.name
+      app_selector = name == "products" ? "tech-product-api" : name == "orders" ? "tech-order-api" : name == "payment" ? "tech-payment-api" : name == "payment-mock" ? "pagamento-mock" : config.name
     }
   }
   description = "LoadBalancer service details for each microservice"
