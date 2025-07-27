@@ -53,7 +53,7 @@ variable "microservices" {
     }
     payment-mock = {
       name           = "payment-mock-service"
-      port           = 3004
+      port           = 4000
       replicas       = 1
       cpu_limit      = "300m"
       memory_limit   = "256Mi"

@@ -22,11 +22,12 @@ This repository contains the Terraform code to provision and manage the AWS infr
 
 ## Microservices Architecture
 
-The infrastructure supports 3 microservices:
+The infrastructure supports 4 microservices:
 
 1. **Products Service** (`products-service`) - Port 3001
 2. **Orders Service** (`orders-service`) - Port 3002  
 3. **Payment Service** (`payment-service`) - Port 3003
+4. **Payment Mock Service** (`payment-mock-service`) - Port 4000
 
 Each microservice runs in its own Kubernetes namespace with:
 - Dedicated ALB ingress rules
@@ -229,6 +230,7 @@ The infrastructure uses **AWS Application Load Balancer (ALB)** for external acc
 - Products Service: `http://[ALB-URL]:3001`
 - Orders Service: `http://[ALB-URL]:3002`
 - Payment Service: `http://[ALB-URL]:3003`
+- Payment Mock Service: `http://[ALB-URL]:4000`
 
 ## Troubleshooting
 

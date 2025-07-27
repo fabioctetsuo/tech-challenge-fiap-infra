@@ -49,6 +49,7 @@ output "access_instructions" {
     kubectl get svc -n products-service
     kubectl get svc -n orders-service  
     kubectl get svc -n payment-service
+    kubectl get svc -n payment-mock-service
     
     The EXTERNAL-IP column will show your public endpoints.
     
@@ -57,6 +58,11 @@ output "access_instructions" {
     - API: http://[EXTERNAL-IP]:3001/api
     - Products: http://[EXTERNAL-IP]:3001/api/produtos
     - Categories: http://[EXTERNAL-IP]:3001/api/categorias
+    
+    For the payment-mock API:
+    - Health: http://[EXTERNAL-IP]:4000/health
+    - API: http://[EXTERNAL-IP]:4000/api
+    - Swagger: http://[EXTERNAL-IP]:4000/api
     
     Note: The LoadBalancer service uses the correct app selector to match your application pods.
   EOT
